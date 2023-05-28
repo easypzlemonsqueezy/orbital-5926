@@ -27,13 +27,10 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
             InlineKeyboardButton("Add an Expense", callback_data="Add an Expense"),
         ],
         [
-            InlineKeyboardButton("Participants", callback_data="Participants"),
+            InlineKeyboardButton("View a Summary", callback_data="View a Summary"),
         ],
         [
             InlineKeyboardButton("Settle Up", callback_data="Settle Up"),
-        ],
-        [
-            InlineKeyboardButton("Help", callback_data="Help"),
         ],
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
