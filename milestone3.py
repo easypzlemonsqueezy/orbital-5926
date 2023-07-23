@@ -7,7 +7,7 @@ KNOWN LIMITATIONS OF MONEYMATE:
 import telebot
 from telebot import types
 
-TOKEN = "6625167658:AAHs-5VBxm89Y6Tc29fHlSjGXTpBLySRxeE"
+TOKEN = "TOKEN"
 BOT_USERNAME = '@MoneyMate5926bot'
 
 bot = telebot.TeleBot(TOKEN)
@@ -17,7 +17,7 @@ expenses = {}
 ##################################
 ### list of available commands ###
 ##################################
-commands = {
+commands = { 
     'start' : 'Starts MoneyMate',
     'help' : 'Provides information on the list of commands available for MoneyMate',
     'reset' : 'Resets MoneyMate',
@@ -29,11 +29,11 @@ commands = {
 @bot.message_handler(commands=['help'])
 def help_command(message):
     text = "The following commands are available: \n"
-    for command in commands:
+    for command in commands: 
         text += "/" + command + ": "
         text += commands[command] + "\n"
     bot.send_message(message.chat.id, text)
-
+    
 #######################
 ### helper commands ###
 #######################
@@ -51,6 +51,7 @@ def start_command_markup():
     markup.row(reset)
     return markup
 
+# @bot.message_handler(func=lambda message: message.text.startswith('/'))
 @bot.message_handler(func=lambda message: message.entities is not None and any(entity.type == 'bot_command' for entity in message.entities))
 def handle_commands(message):
     # Extract the command
@@ -76,7 +77,7 @@ def start_command(message):
     bot.send_message(user_id, "Hi! I'm MoneyMate and I'm here to help you gather and track your group expenses.")
     help_command(message)
     bot.send_message(user_id, "What would you like to do today?", reply_markup=start_command_markup())
-
+        
 def alt_start_command(message):
     user_id = message.from_user.id
     bot.send_message(user_id, "What else would you like to do today?", reply_markup=start_command_markup())
@@ -91,12 +92,21 @@ def exception_to_start_command(message):
 @bot.message_handler(func=lambda message: message.text == "Add an Expense")
 def add_expense_description_command(message):
     user_id = message.from_user.id
+    if message.text.startswith('/'):  # Check if the incoming message is a command
+        handle_commands(message)
+        return
+    
     markup = types.ReplyKeyboardRemove(selective=False)
     bot.send_message(user_id, 'Enter the description for the expense:', reply_markup=markup)
+    handle_commands(message)
     bot.register_next_step_handler(message, add_expense_amount_command)
 
 def add_expense_amount_command(message):
     user_id = message.from_user.id
+    if message.text.startswith('/'):  # Check if the incoming message is a command
+        handle_commands(message)
+        return
+    
     try:
         description = message.text
 
@@ -108,19 +118,26 @@ def add_expense_amount_command(message):
 
 def add_payee_command(message, user_id, description):
     user_id = message.from_user.id
+    if message.text.startswith('/'):  # Check if the incoming message is a command
+        handle_commands(message)
+        return
+    
     try:
         total_amount = float(message.text.replace('$', ''))
         bot.send_message(user_id, 'Enter the payee for the expense:\nNote: There should only be one payee per expense.')
         bot.register_next_step_handler(message, add_participants_command, user_id, description, total_amount)
     except Exception:
         bot.reply_to(
-            message,
+            message, 
             'Invalid amount format. Please input a number or a decimal (e.g. 12.34).\n'
             'Please press the "Add an Expense" button to start again.')
         exception_to_start_command(message)
 
 def add_participants_command(message, user_id, description, total_amount):
     user_id = message.from_user.id
+    if message.text.startswith('/'):  # Check if the incoming message is a command
+        handle_commands(message)
+        return
     try:
         payee = message.text.strip().lower()
 
@@ -132,7 +149,7 @@ def add_participants_command(message, user_id, description, total_amount):
         })
 
         bot.send_message(user_id, 'Enter the participants involved in this expense, separated by commas, in this format:\n'
-                         f'PZ, Dionne, Ivan, ...')
+                         'PZ, Dionne, Ivan, ...')
         bot.register_next_step_handler(message, split_type_command, user_id)
     except Exception:
         bot.reply_to(message, 'Invalid input. Please press the "Add an Expense" button to start again.')
@@ -140,24 +157,28 @@ def add_participants_command(message, user_id, description, total_amount):
 
 def split_type_command(message, user_id):
     user_id = message.from_user.id
+    if message.text.startswith('/'):  # Check if the incoming message is a command
+        handle_commands(message)
+        return
+    
     try:
         participants = message.text.strip().lower().split(',')
         participants = [participant.strip() for participant in participants]
-
+        
         # Store the participants in the user's context
         current_expense = expenses[user_id][-1]
         current_expense['participants'] = participants
-
+    
         markup = types.ReplyKeyboardMarkup()
         equal_button = types.KeyboardButton('Equally')
         unequal_button = types.KeyboardButton('Unequally')
         markup.row(equal_button)
         markup.row(unequal_button)
         bot.send_message(user_id, 'How do you wish to split this expense? (Equally/Unequally):', reply_markup=markup)
-        bot.register_next_step_handler(message, save_expense_equal_command, user_id)
+        bot.register_next_step_handler(message, save_expense_equal_command, user_id)    
     except Exception:
         bot.send_message(
-            user_id,
+            user_id, 
             'Invalid input. Please enter the participants with comma-separated names.\n'
             'Please press the "Add an Expense" button to start again.'
         )
@@ -165,6 +186,10 @@ def split_type_command(message, user_id):
 
 def save_expense_equal_command(message, user_id):
     user_id = message.from_user.id
+    if message.text.startswith('/'):  # Check if the incoming message is a command
+        handle_commands(message)
+        return
+    
     markup = types.ReplyKeyboardRemove(selective=False)
     try:
         split_type = message.text.strip().lower()
@@ -185,7 +210,7 @@ def save_expense_equal_command(message, user_id):
             current_expense['equal_amount_per_participant'] = equal_amount_per_participant
         else:  # Unequal split
             bot.send_message(
-                user_id,
+                user_id, 
                 'Enter the amount of the expense for each participant in the order keyed above, separated by commas\n'
                 '(e.g. 6, 4, 2.34):\n'
                 'Note: Sum of amounts should add up to the total amount of the expense.', reply_markup=markup)
@@ -201,7 +226,7 @@ def save_expense_equal_command(message, user_id):
         )
         alt_start_command(message)
     except Exception:
-        bot.reply_to(message,
+        bot.reply_to(message, 
                      'Invalid input. Please enter "Equally" or "Unequally" as the split type.\n'
                      'Please press the "Add an Expense" button to start again.')
         exception_to_start_command(message)
@@ -209,10 +234,14 @@ def save_expense_equal_command(message, user_id):
 
 def save_expense_unequal_command(message, user_id, participants, total_amount):
     user_id = message.from_user.id
+    if message.text.startswith('/'):  # Check if the incoming message is a command
+        handle_commands(message)
+        return
+    
     try:
         amounts = message.text.replace('$', '').split(',')
         unequal_amount_per_participant = [float(amount) for amount in amounts]
-
+    
         if len(unequal_amount_per_participant) != len(participants) or sum(unequal_amount_per_participant) != total_amount:
             raise ValueError
 
@@ -229,9 +258,9 @@ def save_expense_unequal_command(message, user_id, participants, total_amount):
         )
         alt_start_command(message)
     except Exception:
-        bot.reply_to(message,
-                     f'Invalid input. Please enter {len(participants)} amounts separated by commas'
-                     'or make sure the amounts add up to the total amount.\n'
+        bot.reply_to(message, 
+                     f'Invalid input. Please enter {len(participants)} amounts separated by commas '
+                     f'and make sure the {len(participants)} amounts add up to the total amount.\n'
                      'Please press the "Add an Expense" button to start again.')
         exception_to_start_command(message)
 
@@ -361,9 +390,9 @@ def view_balance_command(message):
         # Formatting the balances for each participant in the response
         for participant, balance_amount in balance_by_participant.items():
             response += f'{participant}: SGD {balance_amount:.2f}\n'
-        response += '\nNote: \nA positive balance of $x means you are being owed $x '
-        response += 'while a negative balance of $x means you owe $x'
-
+        response += '\nNote: \nA positive balance means you are being owed money '
+        response += 'while a negative balance means you owe money!'
+        
         bot.reply_to(message, response)
 
     alt_start_command(message)
