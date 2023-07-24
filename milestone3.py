@@ -421,6 +421,3 @@ def catchall_command(message):
 ### starts the bot ###
 ######################
 bot.infinity_polling()
-
-while True: # Don't end the main thread
-    pass
